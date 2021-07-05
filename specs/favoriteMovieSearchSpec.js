@@ -2,18 +2,9 @@ import FavoriteMovieSearchPresenter
 from '../src/scripts/views/pages/liked-movies/favorite-movie-search-presenter';
 import FavoriteMovieIdb from '../src/scripts/data/favorite-movie-idb';
 
-describe('Searching movies', () => {
-  let presenter;
-  let favoriteMovies;
-
-  const searchMovies = (query) => {
-    const queryElement = document.getElementById('query');
-    queryElement.value = query;
-    queryElement.dispatchEvent(new Event('change'));
-  };
-
-  const setMovieSearchContainer = () => {
-    document.body.innerHTML = `
+class FavoriteMovieSearchView {
+  getTemplate() {
+    return `
         <div id="movie-search-container">
             <input id="query" type="text">
             <div class="movie-result-container">
@@ -22,12 +13,54 @@ describe('Searching movies', () => {
             </div>
         </div>
         `;
+  }
+
+  runWhenUserIsSearching(callback) {
+    document.getElementById('query').addEventListener('change', (event) => {
+      callback(event.target.value);
+    });
+  }
+
+  showMovies(movies) {
+    let html;
+    if (movies.length > 0) {
+      html = movies.reduce(
+        (carry, movie) => carry.concat(`<li class="movie"><span class="movie__title">${movie.title || '-'}</span></li>`),
+        '',
+      );
+    } else {
+      html = '<div class="movies__not__found">Film tidak ditemukan</div>';
+    }
+   
+    document.querySelector('.movies').innerHTML = html;
+   
+    document.getElementById('movie-search-container')
+      .dispatchEvent(new Event('movies:searched:updated'));
+  }
+
+}
+
+describe('Searching movies', () => {
+  let presenter;
+  let favoriteMovies;
+  let view;
+
+  const searchMovies = (query) => {
+    const queryElement = document.getElementById('query');
+    queryElement.value = query;
+    queryElement.dispatchEvent(new Event('change'));
+  };
+
+  const setMovieSearchContainer = () => {
+    view = new FavoriteMovieSearchView();
+    document.body.innerHTML = view.getTemplate();
   };
 
   const constructPresenter = () => {
     favoriteMovies = spyOnAllFunctions(FavoriteMovieIdb);
     presenter = new FavoriteMovieSearchPresenter({
       favoriteMovies,
+      view,
     });
   };
 
